@@ -1182,7 +1182,7 @@ void PrintStatus(const D2RL::PluginContext* context) noexcept {
     std::snprintf(
         line,
         sizeof(line),
-        "Buff Panel 1.0.2 BuffHud: layout=3x7-lower-left-fill active=%zu/%zu session=%llu clock=%s frame=%u revision=%llu panel=%s frameBackend=%s skillIcons=%s skillNames=%s bank=%u tableRevision=%llu offsets(link=0x%X class=0x%X icon=0x%X nameId=0x%X) candidates=%u/%u/%u polls=%llu layoutRefresh=%llu timerWrites=%llu timerFailures=%llu tooltipWrites=%llu tooltipWriteFailures=%llu tooltipQualFailures=%llu tooltipNameFailures=%llu tooltipStorage=%s iconResolveFailures=%llu frameFallbacks=%llu expired=%llu widgetFailures=%llu widgetEnableFailures=%llu panelOpenFailures=%llu.",
+        "Buff Panel 1.0.4 BuffHud: layout=3x7-lower-left-fill active=%zu/%zu session=%llu clock=%s frame=%u revision=%llu panel=%s frameBackend=%s skillIcons=%s skillNames=%s bank=%u tableRevision=%llu offsets(link=0x%X class=0x%X icon=0x%X nameId=0x%X) candidates=%u/%u/%u polls=%llu layoutRefresh=%llu timerWrites=%llu timerFailures=%llu tooltipWrites=%llu tooltipWriteFailures=%llu tooltipQualFailures=%llu tooltipNameFailures=%llu tooltipStorage=%s iconResolveFailures=%llu frameFallbacks=%llu expired=%llu widgetFailures=%llu widgetEnableFailures=%llu panelOpenFailures=%llu.",
         snapshot.count,
         SlotCount,
         static_cast<unsigned long long>(snapshot.sessionGeneration),
@@ -1535,7 +1535,7 @@ bool Initialize(const D2RL::PluginContext* context) noexcept {
 
     ResetDiagnostics();
     Context->LogInfo(
-        "Buff Panel 1.0.2 BuffHud initialized: production 3x7 lower-left-fill panel, 21 reusable slots, display-only click-through buff icons with slot-local FocusableWidget hover tooltips, timer/resource presentation with single-value resource counters, runtime Skills->SkillDesc icon + localized str-name cache resolver using the first WORD-aligned post-icon name field with Missing-string rejection, nine native skill atlases (including Warlock), stable priority ordering, session reset, and live ButtonWidget frame application through the build-93847 path visually qualified by Skill Icon HUD Probe 0.7.0.");
+        "Buff Panel 1.0.4 BuffHud initialized: production 3x7 lower-left-fill panel, 21 reusable slots, display-only click-through buff icons with slot-local FocusableWidget hover tooltips, timer/resource presentation with single-value resource counters, runtime Skills->SkillDesc icon + localized str-name cache resolver using the first WORD-aligned post-icon name field with Missing-string rejection, nine native skill atlases (including Warlock), stable priority ordering, session reset, and live ButtonWidget frame application through the build-93847 path visually qualified by Skill Icon HUD Probe 0.7.0.");
     return true;
 }
 
