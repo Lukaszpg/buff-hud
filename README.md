@@ -41,7 +41,12 @@ Copy `d2rl-buff-panel.dll` to **one** of these paths (create the `plugins` direc
 <Diablo II Resurrected>/mods/<mod-name>/d2rloader/plugins/d2rl-buff-panel.dll
 ```
 
-Use the first for a global installation, or the second to scope it to one mod. The default `BuffHudhd.json` and `buff-hud.txt` are embedded during the build; shipping their source copies separately is not required for the default behavior. To change the **embedded** default list/layout, edit the matching file under `runtime-data/`, **reconfigure CMake**, and rebuild. Loose mod-specific overrides are an advanced option; validate resource precedence for the selected loader/mod configuration before documenting them for users.
+Unzip `data.zip` from releases or copy files mentioned below from `data` folder found wherevcer you have cloned the repository.
+Copy the files to your active mod directory under D2RLoader. 
+
+```
+data/global/ui/layouts/buff-panel/BuffHudhd.json
+data/global/excel/d2rloader/buff-panel/buff-hud.txt
 
 ## Building
 
