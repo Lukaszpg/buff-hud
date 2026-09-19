@@ -4,6 +4,7 @@
 #include "core/buff_display_bus.hpp"
 #include "core/services.hpp"
 #include "icon_frame_backend.hpp"
+#include "loose_layout.hpp"
 #include "native/native_contract.hpp"
 #include "skill_icon_resolver.hpp"
 
@@ -21,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include <limits>
+#include <string>
 #include <string_view>
 #include <system_error>
 
@@ -85,6 +87,8 @@ const D2RL::WidgetService* Widgets{};
 const D2RL::ThreadService* Threads{};
 const D2RL::LifecycleService* Lifecycle{};
 D2RL::Resources::RegistrationHandle LayoutResource{D2RL::Resources::InvalidHandle};
+LooseLayout::Source LayoutSource{LooseLayout::Source::Embedded};
+std::size_t LayoutBytes{};
 D2RL::Panels::RegistrationHandle RegisteredPanel{D2RL::Panels::InvalidHandle};
 D2RL::Lifecycle::ListenerHandle DataTablesListener{D2RL::Lifecycle::InvalidHandle};
 std::array<D2RL::Lifecycle::ListenerHandle, 3> GameplayListeners{};
@@ -1178,7 +1182,7 @@ void PrintStatus(const D2RL::PluginContext* context) noexcept {
     std::snprintf(
         line,
         sizeof(line),
-        "Buff Panel 1.0.1 BuffHud: layout=3x7-lower-left-fill active=%zu/%zu session=%llu clock=%s frame=%u revision=%llu panel=%s frameBackend=%s skillIcons=%s skillNames=%s bank=%u tableRevision=%llu offsets(link=0x%X class=0x%X icon=0x%X nameId=0x%X) candidates=%u/%u/%u polls=%llu layoutRefresh=%llu timerWrites=%llu timerFailures=%llu tooltipWrites=%llu tooltipWriteFailures=%llu tooltipQualFailures=%llu tooltipNameFailures=%llu tooltipStorage=%s iconResolveFailures=%llu frameFallbacks=%llu expired=%llu widgetFailures=%llu widgetEnableFailures=%llu panelOpenFailures=%llu.",
+        "Buff Panel 1.0.2 BuffHud: layout=3x7-lower-left-fill active=%zu/%zu session=%llu clock=%s frame=%u revision=%llu panel=%s frameBackend=%s skillIcons=%s skillNames=%s bank=%u tableRevision=%llu offsets(link=0x%X class=0x%X icon=0x%X nameId=0x%X) candidates=%u/%u/%u polls=%llu layoutRefresh=%llu timerWrites=%llu timerFailures=%llu tooltipWrites=%llu tooltipWriteFailures=%llu tooltipQualFailures=%llu tooltipNameFailures=%llu tooltipStorage=%s iconResolveFailures=%llu frameFallbacks=%llu expired=%llu widgetFailures=%llu widgetEnableFailures=%llu panelOpenFailures=%llu.",
         snapshot.count,
         SlotCount,
         static_cast<unsigned long long>(snapshot.sessionGeneration),
@@ -1214,6 +1218,12 @@ void PrintStatus(const D2RL::PluginContext* context) noexcept {
         static_cast<unsigned long long>(WidgetEnableFailures.load(std::memory_order_relaxed)),
         static_cast<unsigned long long>(PanelOpenFailures.load(std::memory_order_relaxed)));
     context->WriteConsoleMessage(line);
+    char layoutLine[160]{};
+    std::snprintf(layoutLine, sizeof(layoutLine),
+        "Buff Panel: BuffHudhd.json source=%s bytes=%zu (restart D2R to reload).",
+        LayoutSource == LooseLayout::Source::ActiveMod ? "active-mod" : "embedded",
+        LayoutBytes);
+    context->WriteConsoleMessage(layoutLine);
 
     const auto visible = std::min<std::size_t>(snapshot.count, SlotCount);
     for (std::size_t i = 0; i < visible; ++i) {
@@ -1339,17 +1349,35 @@ D2RL::ConsoleCommandResult __cdecl BuffCommand(
 
 [[nodiscard]] bool RegisterLayoutAndPanel() noexcept {
     if (Context == nullptr || Resources == nullptr || Panels == nullptr) return false;
+    const auto selected = LooseLayout::Select(
+        Context->modDirectory,
+        Context->activeMod,
+        std::string_view(Internal::BuffHudLayout, sizeof(Internal::BuffHudLayout) - 1));
+    if (selected.source == LooseLayout::Source::InvalidOverride) {
+        std::string message = "Buff Panel: BuffHudhd.json rejected: " + selected.error;
+        Context->LogError(message.c_str());
+        return false;
+    }
     const D2RL::Resources::ResourceRegistration resource{
         .structSize = D2RL::Resources::ResourceRegistrationSize,
         .flags = 0,
         .path = "data/global/ui/layouts/buff-panel/BuffHudhd.json",
-        .bytes = Internal::BuffHudLayout,
-        .byteCount = sizeof(Internal::BuffHudLayout) - 1,
+        .bytes = selected.bytes.data(),
+        .byteCount = static_cast<std::uint64_t>(selected.bytes.size()),
     };
     if (Resources->registerResource(Context, &resource, &LayoutResource)
         != D2RL::Resources::Result::Success) {
         Context->LogError("BuffPanel BuffHud: failed to register BuffHudhd.json resource.");
         return false;
+    }
+    // ResourceService copies selected.bytes before returning. Never keep a
+    // pointer to temporary JSON memory after this registration.
+    LayoutSource = selected.source;
+    LayoutBytes = selected.bytes.size();
+    if (selected.source == LooseLayout::Source::ActiveMod) {
+        Context->LogInfo("Buff Panel: BuffHudhd.json source=active-mod (unpacked layout override).");
+    } else {
+        Context->LogInfo("Buff Panel: BuffHudhd.json source=embedded (default layout).");
     }
 
     const D2RL::Panels::PanelRegistration panel{
@@ -1501,13 +1529,13 @@ bool Initialize(const D2RL::PluginContext* context) noexcept {
     if (!Context->RegisterConsoleCommand(
             "buff-panel",
             &BuffCommand,
-            "Show/test Sanctuary of Exile temporary-buff HUD state.")) {
+            "Show/test Buff Panel temporary-buff HUD state.")) {
         Context->LogWarn("BuffPanel BuffHud: console command 'buff-panel' could not be registered.");
     }
 
     ResetDiagnostics();
     Context->LogInfo(
-        "Buff Panel 1.0.1 BuffHud initialized: production 3x7 lower-left-fill panel, 21 reusable slots, display-only click-through buff icons with slot-local FocusableWidget hover tooltips, timer/resource presentation with single-value resource counters, runtime Skills->SkillDesc icon + localized str-name cache resolver using the first WORD-aligned post-icon name field with Missing-string rejection, nine native skill atlases (including Warlock), stable priority ordering, session reset, and live ButtonWidget frame application through the build-93847 path visually qualified by Skill Icon HUD Probe 0.7.0.");
+        "Buff Panel 1.0.2 BuffHud initialized: production 3x7 lower-left-fill panel, 21 reusable slots, display-only click-through buff icons with slot-local FocusableWidget hover tooltips, timer/resource presentation with single-value resource counters, runtime Skills->SkillDesc icon + localized str-name cache resolver using the first WORD-aligned post-icon name field with Missing-string rejection, nine native skill atlases (including Warlock), stable priority ordering, session reset, and live ButtonWidget frame application through the build-93847 path visually qualified by Skill Icon HUD Probe 0.7.0.");
     return true;
 }
 
@@ -1529,6 +1557,8 @@ void Shutdown() noexcept {
     InvalidateWidgetHandles();
 
     LayoutResource = D2RL::Resources::InvalidHandle;
+    LayoutSource = LooseLayout::Source::Embedded;
+    LayoutBytes = 0;
     RegisteredPanel = D2RL::Panels::InvalidHandle;
     DataTablesListener = D2RL::Lifecycle::InvalidHandle;
     GameplayListeners = {};

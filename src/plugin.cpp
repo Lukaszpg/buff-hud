@@ -15,16 +15,16 @@ namespace BuffPanel {
 namespace {
 
 static_assert(D2RL_PLUGIN_ABI_VERSION == 4,
-    "Buff Panel 1.0.1 requires D2RLoader PluginSDK 0.2.x / plugin ABI 4.");
+    "Buff Panel 1.0.2 requires D2RLoader PluginSDK 0.2.x / plugin ABI 4.");
 
 constexpr D2RL::PluginInfo Info{
     .infoSize = D2RL::PluginInfoSize,
     .abiVersion = D2RL_PLUGIN_ABI_VERSION,
     .id = "buff-panel",
     .name = "Buff Panel",
-    .version = "1.0.1",
-    .author = "Sanctuary of Exile contributors",
-    .description = "Standalone table-driven temporary-buff panel and countdown timers extracted from Sanctuary of Exile 0.18.148.",
+    .version = "1.0.2",
+    .author = "MindH1ve",
+    .description = "Standalone configurable D2RLoader buff panel and countdown timers.",
     .flags = D2RL::PluginFlags::Shared | D2RL::PluginFlags::NativeHooks,
 };
 
@@ -36,12 +36,12 @@ D2RL::ConsoleCommandResult __cdecl StatusCommand(
     if (!command || !command->plugin) return D2RL::ConsoleCommandResult::Failed;
     char message[192]{};
     std::snprintf(message, sizeof(message),
-        "Buff Panel 1.0.1 active=%d displayed=%zu postObservers=%zu nativeHooks=%zu",
+        "Buff Panel 1.0.2 active=%d displayed=%zu postObservers=%zu nativeHooks=%zu",
         Active ? 1 : 0, Core::BuffDisplays().Count(),
         Core::StatListPosts().ObserverCount(), Core::Hooks().Snapshot().count);
     command->plugin->WriteConsoleMessage(message);
     command->plugin->WriteConsoleMessage(
-        "Commands: buff-panel, buff-panel-tracker, buff-panel-status. Do not run together with SoE's built-in BuffHud/Tracker.");
+        "Commands: buff-panel, buff-panel-tracker, buff-panel-status. Avoid loading two buff panels simultaneously.");
     return D2RL::ConsoleCommandResult::Handled;
 }
 
@@ -88,7 +88,7 @@ D2RL_PLUGIN_EXPORT bool __cdecl D2RLoaderLoadPlugin(
         "buff-panel-status", &StatusCommand,
         "Show standalone Buff Panel status.");
     Active = true;
-    context->LogInfo("Buff Panel 1.0.1 loaded independently of Sanctuary of Exile (D2R build 93847; PluginSDK 0.2.x/ABI 4).");
+    context->LogInfo("Buff Panel 1.0.2 loaded (D2R build 93847; PluginSDK 0.2.x/ABI 4).");
     return true;
 }
 

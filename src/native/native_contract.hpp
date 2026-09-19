@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-// Build-93847 qualified fields and bridge signatures copied verbatim from SoE 0.18.148.
+// D2R build-93847 qualified fields and loader bridge signatures.
 // Never use this DLL on a different D2R build without requalification.
 namespace BuffPanel::Native::Contract {
 inline constexpr std::uintptr_t GetUnitStatRva = 0x2F5020;

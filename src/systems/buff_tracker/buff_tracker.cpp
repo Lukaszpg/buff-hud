@@ -32,7 +32,7 @@ using GetGameFromUnitFn = void*(__fastcall*)(void* unit) noexcept;
 using GetStatListFromUnitAndStateFn = void*(__fastcall*)(void* unit, std::int32_t state) noexcept;
 
 // StatList semantic field layout is qualified from Player Buff StatList Probe
-// 1.0.1 on D2R build 93847. buff-hud.txt is the authoritative whitelist and
+// 1.0.2 on D2R build 93847. buff-hud.txt is the authoritative whitelist and
 // also declares how each state is presented: finite timer or resource pool.
 // Native CURSE lists remain excluded as a safety boundary. Timer rows require
 // finite future expiry metadata; resource rows read their current/max values
@@ -489,7 +489,7 @@ static_assert(sizeof(NativeTimerMetadata) == Native::Contract::StatListBuffMetad
     return true;
 }
 
-// Retain the pre-0.18.146 expiry/presence lifecycle. The new renewal path is
+// Retain the established expiry/presence lifecycle. The renewal path is
 // strictly additive: a verified *later* native expiry can extend a published
 // timer, but an unreadable or mismatched native metadata block must never
 // shorten or remove a countdown. A posted state gets a full frame to attach.
@@ -557,7 +557,7 @@ void RefreshTimerPresence(std::uint32_t currentFrame) noexcept {
                 continue;
             }
 
-            // Unmodified 0.18.145 premature-removal policy.
+            // Preserve the existing state-removal policy.
             TimerPresenceMisses.fetch_add(1, std::memory_order_relaxed);
             if (removalCount < removals.size()) {
                 removals[removalCount++] = Removal{
@@ -1363,7 +1363,7 @@ bool Initialize(const D2RL::PluginContext* context) noexcept {
 
     ResetDiagnostics();
     Context->LogInfo(
-        "Buff Panel 1.0.1 BuffTracker initialized: whitelisted timer states are discovered from attached native player states once per game frame even without STATLIST_PostStatList; qualified expiry renewals, early removal and resource-mode polling remain supported.");
+        "Buff Panel 1.0.2 BuffTracker initialized: whitelisted timer states are discovered from attached native player states once per game frame even without STATLIST_PostStatList; qualified expiry renewals, early removal and resource-mode polling remain supported.");
     return true;
 }
 
