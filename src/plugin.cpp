@@ -23,8 +23,8 @@ constexpr D2RL::PluginInfo Info{
     .id = "buff-panel",
     .name = "Buff Panel",
     .version = "1.0.0",
-    .author = "Sanctuary of Exile contributors",
-    .description = "Standalone table-driven temporary-buff panel and countdown timers extracted from Sanctuary of Exile 0.18.148.",
+    .author = "MindH1ve",
+    .description = "Standalone table-driven temporary-buff panel and countdown timers.",
     .flags = D2RL::PluginFlags::Shared | D2RL::PluginFlags::NativeHooks,
 };
 
@@ -88,7 +88,7 @@ D2RL_PLUGIN_EXPORT bool __cdecl D2RLoaderLoadPlugin(
         "buff-panel-status", &StatusCommand,
         "Show standalone Buff Panel status.");
     Active = true;
-    context->LogInfo("Buff Panel 1.0.0 loaded independently of Sanctuary of Exile (D2R build 93847; PluginSDK 0.2.x/ABI 4).");
+    context->LogInfo("Buff Panel 1.0.0 loaded (D2R build 93847; PluginSDK 0.2.x/ABI 4).");
     return true;
 }
 
