@@ -11,6 +11,11 @@ A standalone 3×7 temporary-buff panel and countdown tracker.
 - Table-driven whitelist from `buff-hud.txt`: `name`, `state_id`, `display_type`, `value_stat`, `max_stat`, `skill_id`, `value_shift`, `enabled`.
 - Excludes curses and shared-stash proxy states; built-in semantic checks on native buff metadata.
 
+## Acknowledgements
+
+Many thanks to [RuffnecKk](https://github.com/RuffDood) for being a great teacher and awesome dude.
+Make sure to check out his amazing plugin [suite](https://github.com/RuffDood/RuffnecKk-D2RLoader-Suite)!
+
 ### Default table
 
 Timed self-skill, shrine, temporary potion and resource candidates are included; auras/permanent passives are recorded with `enabled=0` because they are **not** finite countdowns. A row's presence does **not** guarantee that the game emits the metadata necessary for a HUD countdown. In particular, shrine/potion rows can be enabled but remain invisible if `skill=0`. Absorb pools have independent resource presentation and state disambiguation.
