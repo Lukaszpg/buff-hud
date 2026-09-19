@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <string>
 #include <string_view>
@@ -11,6 +12,18 @@ inline constexpr std::string_view VirtualPath =
 inline constexpr std::size_t MaximumBytes = 2u * 1024u * 1024u;
 
 enum class Source { Embedded, ActiveMod, InvalidOverride };
+
+// D2RLoader reports widget rect coordinates relative to the widget's parent.
+// Capture the matching BuffGrid rect from the JSON actually registered at load,
+// not from a subsequent disk read (which may have changed without a restart).
+struct GridRect final {
+    std::int32_t x{};
+    std::int32_t y{};
+    std::int32_t width{};
+    std::int32_t height{};
+};
+
+[[nodiscard]] bool ReadBuffGridRect(std::string_view bytes, GridRect& rect) noexcept;
 
 struct Selection final {
     Source source{Source::Embedded};

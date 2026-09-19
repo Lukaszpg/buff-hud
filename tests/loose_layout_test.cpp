@@ -24,6 +24,16 @@ int main(int argc, char** argv) {
     const std::string defaultLayout(std::istreambuf_iterator<char>(input), {});
     std::string error;
     assert(B::Validate(defaultLayout, error));
+    B::GridRect grid{};
+    assert(B::ReadBuffGridRect(defaultLayout, grid));
+    assert(grid.x == 50 && grid.y == -515 && grid.width == 780 && grid.height == 300);
+    // Inspect the named widget's own rect, not a nearby child/parent rect.
+    // JSON member order and whitespace must not change the readback.
+    const std::string reordered = R"({"fields":{"rect":{"height":300,"width":780,"y":-777,"x":999}},"name":"BuffGrid"})";
+    assert(B::ReadBuffGridRect(reordered, grid));
+    assert(grid.x == 999 && grid.y == -777 && grid.width == 780 && grid.height == 300);
+    assert(!B::ReadBuffGridRect(R"({"title":"BuffGrid","fields":{"rect":{"x":1,"y":2,"width":3,"height":4}}})", grid));
+    assert(!B::ReadBuffGridRect(R"({"name":"BuffGrid","fields":{"rect":{"x":1.5,"y":2,"width":3,"height":4}}})", grid));
 
     const auto base = fs::temp_directory_path() / "buff-panel-layout-test";
     fs::remove_all(base);
@@ -42,6 +52,11 @@ int main(int argc, char** argv) {
     selection = B::Select(root.c_str(), "test-mod", defaultLayout);
     assert(selection.source == B::Source::ActiveMod);
     assert(selection.bytes == custom && selection.path == path);
+    assert(B::ReadBuffGridRect(selection.bytes, grid));
+    assert(grid.x == 250 && grid.y == -515 && grid.width == 780 && grid.height == 300);
+    // The selected startup bytes remain the source of truth even if the user
+    // subsequently edits the loose file while the plugin is still loaded.
+    assert(B::ReadBuffGridRect(defaultLayout, grid) && grid.x == 50);
 
     Write(path, std::string("\xef\xbb\xbf") + custom);
     selection = B::Select(root.c_str(), "test-mod", defaultLayout);
@@ -65,6 +80,6 @@ int main(int argc, char** argv) {
     selection = B::Select(root.c_str(), "test-mod", defaultLayout);
     assert(selection.source == B::Source::ActiveMod && selection.path == directPath);
     fs::remove_all(base);
-    std::cout << "PASS: JSON syntax/layout shape, embedded fallback, override, altered position, BOM, truncation, "
+    std::cout << "PASS: JSON rect parser, startup-vs-edited selection, syntax/layout shape, embedded fallback, override, altered position, BOM, truncation, "
                  "missing slots, unsafe mod name, alternative loader root\n";
 }

@@ -1,6 +1,7 @@
 #include "loose_layout.hpp"
 
 #include <array>
+#include <charconv>
 #include <cctype>
 #include <cstdint>
 #include <fstream>
@@ -72,6 +73,12 @@ public:
         return true;
     }
 
+    [[nodiscard]] bool GridRectValue(GridRect& rect) const noexcept {
+        if (gridRectCount_ != 1) return false;
+        rect = gridRect_;
+        return true;
+    }
+
 private:
     [[nodiscard]] bool ParseValue(unsigned depth) {
         if (depth > 128 || pos_ >= input_.size()) return false;
@@ -116,8 +123,62 @@ private:
         return false;
     }
 
-    [[nodiscard]] bool ParseObject(unsigned depth) {
-        if (!Take('{')) return false;
+    // Parse the actual fields.rect object belonging to a named BuffGrid widget.
+    // This deliberately does NOT grep for the first "rect" near the text
+    // "BuffGrid": that could silently report another widget's coordinates.
+    [[nodiscard]] bool ParseRect(unsigned depth, GridRect& rect, bool& complete) {
+        if (depth > 128 || !Take('{')) return false;
+        SkipSpace();
+        std::array<bool, 4> seen{};
+        bool integerValues = true;
+        if (!Peek('}')) {
+            do {
+                SkipSpace();
+                std::string_view key;
+                if (!ParseString(&key)) return false;
+                SkipSpace();
+                if (!Take(':')) return false;
+                SkipSpace();
+                const auto start = pos_;
+                if (!ParseValue(depth)) return false;
+                const auto token = input_.substr(start, pos_ - start);
+                int index = -1;
+                if (key == "x") index = 0;
+                else if (key == "y") index = 1;
+                else if (key == "width") index = 2;
+                else if (key == "height") index = 3;
+                if (index >= 0) {
+                    std::int32_t value{};
+                    const auto parsed = std::from_chars(
+                        token.data(), token.data() + token.size(), value);
+                    if (parsed.ec != std::errc{}
+                        || parsed.ptr != token.data() + token.size()
+                        || seen[static_cast<std::size_t>(index)]) {
+                        integerValues = false;
+                    } else {
+                        seen[static_cast<std::size_t>(index)] = true;
+                        switch (index) {
+                        case 0: rect.x = value; break;
+                        case 1: rect.y = value; break;
+                        case 2: rect.width = value; break;
+                        case 3: rect.height = value; break;
+                        default: break;
+                        }
+                    }
+                }
+                SkipSpace();
+                if (Peek('}')) break;
+                if (!Take(',')) return false;
+            } while (pos_ < input_.size());
+        }
+        if (!Take('}')) return false;
+        complete = integerValues;
+        for (const bool present : seen) complete = complete && present;
+        return true;
+    }
+
+    [[nodiscard]] bool ParseFields(unsigned depth, GridRect& rect, bool& hasRect) {
+        if (depth > 128 || !Take('{')) return false;
         SkipSpace();
         if (Take('}')) return true;
         do {
@@ -127,12 +188,47 @@ private:
             SkipSpace();
             if (!Take(':')) return false;
             SkipSpace();
-            // Record required layout symbols only for actual string properties.
+            if (key == "rect" && Peek('{')) {
+                GridRect candidate{};
+                bool complete{};
+                if (!ParseRect(depth + 1, candidate, complete)) return false;
+                if (complete) {
+                    rect = candidate;
+                    hasRect = true;
+                }
+            } else if (!ParseValue(depth)) {
+                return false;
+            }
+            SkipSpace();
+            if (Take('}')) return true;
+            if (!Take(',')) return false;
+            SkipSpace();
+        } while (pos_ < input_.size());
+        return false;
+    }
+
+    [[nodiscard]] bool ParseObject(unsigned depth) {
+        if (!Take('{')) return false;
+        SkipSpace();
+        if (Take('}')) return true;
+        std::string_view objectName{};
+        GridRect objectRect{};
+        bool objectHasRect{};
+        do {
+            SkipSpace();
+            std::string_view key;
+            if (!ParseString(&key)) return false;
+            SkipSpace();
+            if (!Take(':')) return false;
+            SkipSpace();
+            // Track the direct name and fields.rect members of THIS object,
+            // independent of their order. Child widgets cannot overwrite it.
             if ((key == "name" || key == "type") && Peek('"')) {
                 std::string_view name;
                 if (!ParseString(&name)) return false;
                 if (key == "type" && name == "Panel") rootPanel_ = true;
                 if (key == "name") {
+                    objectName = name;
                     if (name == "buff-panel/BuffHud") rootName_ = true;
                     if (name == "BuffGrid") buffGrid_ = true;
                     for (std::size_t i = 0; i < slots_.size(); ++i) {
@@ -144,11 +240,19 @@ private:
                         }
                     }
                 }
+            } else if (key == "fields" && Peek('{')) {
+                if (!ParseFields(depth + 1, objectRect, objectHasRect)) return false;
             } else if (!ParseValue(depth)) {
                 return false;
             }
             SkipSpace();
-            if (Take('}')) return true;
+            if (Take('}')) {
+                if (objectName == "BuffGrid" && objectHasRect) {
+                    ++gridRectCount_;
+                    gridRect_ = objectRect;
+                }
+                return true;
+            }
             if (!Take(',')) return false;
             SkipSpace();
         } while (pos_ < input_.size());
@@ -217,9 +321,20 @@ private:
     bool rootName_{};
     bool buffGrid_{};
     std::array<bool, 21> slots_{};
+    GridRect gridRect_{};
+    unsigned gridRectCount_{};
 };
 
 } // namespace
+
+bool ReadBuffGridRect(std::string_view bytes, GridRect& rect) noexcept {
+    try {
+        JsonParser json(bytes);
+        return json.Parse() && json.GridRectValue(rect);
+    } catch (...) {
+        return false;
+    }
+}
 
 bool Validate(std::string_view bytes, std::string& error) noexcept {
     try {
