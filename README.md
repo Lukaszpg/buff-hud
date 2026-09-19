@@ -1,4 +1,4 @@
-# Buff Panel 1.0.0 — D2RLoader plugin
+# Buff Panel — D2RLoader plugin
 
 A standalone 3×7 temporary-buff panel and countdown tracker.
 
@@ -54,11 +54,11 @@ Buff Panel is a standalone D2RLoader plugin.
 - Official [D2RLoader PluginSDK](https://github.com/D2RLoader/PluginSDK), release **0.2.x**, plugin ABI **4**.
 - A D2RLoader runtime supporting plugin ABI 4 and the services used by Buff Panel.
 
-**Compatibility:** Buff Panel 1.0.0's native addresses and byte contracts are qualified only for D2R build **93847**. Building successfully does not qualify it for other game builds. The plugin is not a universal-build release.
+**Compatibility:** Buff Panel 1.0.6's native addresses and byte contracts are qualified only for D2R build **93847**. Building successfully does not qualify it for other game builds. The plugin is not a universal-build release.
 
 ### Option A — Build Buff Panel by itself (recommended for distribution)
 
-1. Extract `buff-panel-1.0.0-source.zip`. The project root is `plugins/buff-panel/`, the directory containing `CMakeLists.txt`.
+1. Clone the master branch. The project root is `plugins/buff-panel/`, the directory containing `CMakeLists.txt`.
 2. Open **Developer PowerShell for Visual Studio** (x64 environment) and change directory to the extracted project root.
 3. Download the official PluginSDK into `third_party/PluginSDK` beneath that project root:
 
@@ -109,10 +109,10 @@ buff-panel status
 buff-panel-tracker
 ```
 
-Try Fade (`state_id=159`) or another enabled native timer state. The 1.0.0 expanded catalog contains candidates that still require runtime qualification; see `BUFF-CATALOG-REPORT.md` and `buff-hud-audit.tsv`.
+Try Fade (`state_id=159`) or another enabled native timer state. The 1.0.6 expanded catalog contains candidates that still require runtime qualification; see `BUFF-CATALOG-REPORT.md` and `buff-hud-audit.tsv`.
 
 - **CMake cannot find PluginSDK:** verify the location of its `CMakeLists.txt` and `include/D2RLPlugin/version.h`, or set `CMAKE_PREFIX_PATH` for an installed package.
-- **`min`/`max` macro errors (`C4003`, `C2589`, `C2059`):** use Buff Panel 1.0.0's included CMake configuration, which defines `NOMINMAX` and `WIN32_LEAN_AND_MEAN` on the plugin target. Reconfigure after modifying CMake.
+- **`min`/`max` macro errors (`C4003`, `C2589`, `C2059`):** use Buff Panel 1.0.6's included CMake configuration, which defines `NOMINMAX` and `WIN32_LEAN_AND_MEAN` on the plugin target. Reconfigure after modifying CMake.
 - **Wrong compiler/generator or architecture:** open a Visual Studio C++ developer shell and select x64. Use a fresh build directory when switching generators.
 - **The DLL builds but refuses to initialize:** inspect build qualification / service availability. Do not bypass native-byte safety checks or assume an unrelated D2R build is supported.
 - **No buff appears:** confirm `buff-hud.txt` has the state enabled, the corresponding state is actually active, and `buff-panel-tracker` reports successful publication. Not every enabled catalog entry guarantees a usable native timer.
@@ -125,13 +125,11 @@ Buff Panel does **not** currently have a drag-to-move control or an in-game posi
 
 ### 1. Find the panel layout
 
-In the extracted **source** package, open:
+In the **your active mod where you have installed the plugin** directory, open:
 
 ```text
-plugins/buff-panel/runtime-data/data/global/ui/layouts/buff-panel/BuffHudhd.json
+data/global/ui/layouts/buff-panel/BuffHudhd.json
 ```
-
-If you opened the source folder itself (`plugins/buff-panel`), the relative path starts at `runtime-data/`.
 
 ### 2. Change the `BuffGrid` rectangle
 
@@ -212,9 +210,9 @@ This draws three temporary **display-only** test entries for 15 seconds. It does
 - **Only one icon moved:** you edited an individual `BuffSlot` instead of the parent `BuffGrid`.
 - **The panel is partly off-screen:** reduce the offset and test at the resolution/UI scale you intend to use.
 - **The panel is hidden behind another interface:** choose a different `x`/`y`; the layout also has `priority: 101`, but positioning is the intended adjustment here.
-- **You only have a compiled DLL:** the stock Buff Panel 1.0.0 has no in-game position editor; use the source package to customize and rebuild. Loose JSON overrides should not be assumed to replace the embedded plugin-owned layout on every D2RLoader installation.
+- **You only have a compiled DLL:** the stock Buff Panel 1.0.6 has no in-game position editor; use the source package to customize and rebuild. Loose JSON overrides should not be assumed to replace the embedded plugin-owned layout on every D2RLoader installation.
 
-**Compatibility note:** changing UI position alone does not make the native hook code compatible with a different D2R executable build. Buff Panel 1.0.0's native code remains qualified for D2R build 93847.
+**Compatibility note:** changing UI position alone does not make the native hook code compatible with a different D2R executable build. Buff Panel 1.0.6's native code remains qualified for D2R build 93847.
 
 
 ## Commands
