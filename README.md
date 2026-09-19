@@ -112,13 +112,13 @@ Try Fade (`state_id=159`) or another enabled native timer state. The 1.0.0 expan
 - **The DLL builds but refuses to initialize:** inspect build qualification / service availability. Do not bypass native-byte safety checks or assume an unrelated D2R build is supported.
 - **No buff appears:** confirm `buff-hud.txt` has the state enabled, the corresponding state is actually active, and `buff-panel-tracker` reports successful publication. Not every enabled catalog entry guarantees a usable native timer.
 
-# Moving Buff Panel in the game UI
+## Moving Buff Panel in the game UI
 
 **Buff Panel 1.0.0** — layout customization for players and mod authors
 
 Buff Panel does **not** currently have a drag-to-move control or an in-game position setting. To change where it appears, edit its UI layout JSON and rebuild the plugin. You do **not** need to modify `buff-hud.txt`: that file selects which buffs are tracked, not where the panel is drawn.
 
-## 1. Find the panel layout
+### 1. Find the panel layout
 
 In the extracted **source** package, open:
 
@@ -128,7 +128,7 @@ plugins/buff-panel/runtime-data/data/global/ui/layouts/buff-panel/BuffHudhd.json
 
 If you opened the source folder itself (`plugins/buff-panel`), the relative path starts at `runtime-data/`.
 
-## 2. Change the `BuffGrid` rectangle
+### 2. Change the `BuffGrid` rectangle
 
 Near the start of the file you will find:
 
