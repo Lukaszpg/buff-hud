@@ -114,7 +114,7 @@ Try Fade (`state_id=159`) or another enabled native timer state. The 1.0.0 expan
 
 ## Moving Buff Panel in the game UI
 
-**Buff Panel 1.0.0** — layout customization for players and mod authors
+Layout customization for players and mod authors
 
 Buff Panel does **not** currently have a drag-to-move control or an in-game position setting. To change where it appears, edit its UI layout JSON and rebuild the plugin. You do **not** need to modify `buff-hud.txt`: that file selects which buffs are tracked, not where the panel is drawn.
 
