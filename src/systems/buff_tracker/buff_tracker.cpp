@@ -7,6 +7,7 @@
 #include "native/native_contract.hpp"
 
 #include "default_buff_hud_table.hpp"
+#include "loose_buff_hud.hpp"
 
 #include <Windows.h>
 
@@ -20,6 +21,7 @@
 #include <cstring>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -30,7 +32,7 @@ using GetGameFromUnitFn = void*(__fastcall*)(void* unit) noexcept;
 using GetStatListFromUnitAndStateFn = void*(__fastcall*)(void* unit, std::int32_t state) noexcept;
 
 // StatList semantic field layout is qualified from Player Buff StatList Probe
-// 1.0.0 on D2R build 93847. buff-hud.txt is the authoritative whitelist and
+// 1.0.1 on D2R build 93847. buff-hud.txt is the authoritative whitelist and
 // also declares how each state is presented: finite timer or resource pool.
 // Native CURSE lists remain excluded as a safety boundary. Timer rows require
 // finite future expiry metadata; resource rows read their current/max values
@@ -50,6 +52,8 @@ const D2RL::LifecycleService* Lifecycle{};
 GetGameFromUnitFn GetGameFromUnit{};
 GetStatListFromUnitAndStateFn GetStatListFromUnitAndState{};
 D2RL::CustomTables::TableHandle BuffHudTable{D2RL::CustomTables::InvalidHandle};
+LooseBuffHud::Source TableSource{LooseBuffHud::Source::Embedded};
+std::string TableSourcePath{};
 D2RL::Lifecycle::ListenerHandle DataTablesListener{D2RL::Lifecycle::InvalidHandle};
 std::array<D2RL::Lifecycle::ListenerHandle, 3> GameplayListeners{};
 
@@ -1110,6 +1114,13 @@ D2RL::ConsoleCommandResult __cdecl TrackerCommand(
         static_cast<double>(static_cast<std::int64_t>(LastPrematureRemovedExpire.load(std::memory_order_relaxed))
             - static_cast<std::int64_t>(LastPrematureRemovedFrame.load(std::memory_order_relaxed))) / FramesPerSecond);
     command->plugin->WriteConsoleMessage(line);
+    std::snprintf(line, sizeof(line),
+        "BuffPanel buff-hud.txt source=%s (restart D2R after editing the loose TXT).",
+        TableSource == LooseBuffHud::Source::ActiveMod ? "active-mod" : "embedded");
+    command->plugin->WriteConsoleMessage(line);
+    if (TableSource == LooseBuffHud::Source::ActiveMod) {
+        command->plugin->WriteConsoleMessage(TableSourcePath.c_str());
+    }
     command->plugin->WriteConsoleMessage(
         "Detection policy: timer rows are matched by whitelisted state on authoritative UNIT_PLAYER StatLists and require native skill/level plus finite future expiry. Subsequent game-thread polling extends an existing HUD timer only for a validated later attached-state expiry; failed metadata reads have no effect on the countdown. Early native state removal retires it. Resource rows poll configured current/max stats. STATLIST_BUFF is ignored; STATLIST_CURSE remains excluded.");
     return D2RL::ConsoleCommandResult::Handled;
@@ -1117,17 +1128,42 @@ D2RL::ConsoleCommandResult __cdecl TrackerCommand(
 
 [[nodiscard]] bool RegisterTable() noexcept {
     if (Context == nullptr || Resources == nullptr || CustomTables == nullptr) return false;
+    // Do not depend on opaque resource-overlay priority. Explicitly select the
+    // active mod's loose file BEFORE registering a single in-memory resource.
+    // D2RLoader copies the selected bytes during registerResource().
+    const auto selection = LooseBuffHud::Select(
+        Context->modDirectory, Context->activeMod,
+        std::string_view(DefaultTables::BuffHud, sizeof(DefaultTables::BuffHud) - 1));
+    if (selection.source == LooseBuffHud::Source::InvalidOverride) {
+        char line[512]{};
+        std::snprintf(line, sizeof(line),
+            "Buff Panel: external buff-hud.txt rejected: %s. Correct or delete it; no silent fallback.",
+            selection.error.c_str());
+        Context->LogError(line);
+        return false;
+    }
+    TableSource = selection.source;
+    TableSourcePath.clear();
+    if (TableSource == LooseBuffHud::Source::ActiveMod) {
+        try {
+            const auto utf8 = selection.path.u8string();
+            TableSourcePath.assign(utf8.begin(), utf8.end());
+        } catch (...) {
+            TableSourcePath = "<active mod file>";
+        }
+    }
     const D2RL::Resources::ResourceRegistration resource{
         .structSize = D2RL::Resources::ResourceRegistrationSize,
         .flags = 0,
         .path = "data/global/excel/d2rloader/buff-panel/buff-hud.txt",
-        .bytes = DefaultTables::BuffHud,
-        .byteCount = sizeof(DefaultTables::BuffHud) - 1,
+        .bytes = selection.bytes.data(),
+        .byteCount = selection.bytes.size(),
     };
     D2RL::Resources::RegistrationHandle resourceHandle{D2RL::Resources::InvalidHandle};
     if (Resources->registerResource(Context, &resource, &resourceHandle)
             != D2RL::Resources::Result::Success
         || resourceHandle == D2RL::Resources::InvalidHandle) {
+        Context->LogError("Buff Panel: unable to register selected buff-hud.txt as a loader resource.");
         return false;
     }
     const D2RL::CustomTables::TableRegistration registration{
@@ -1139,9 +1175,24 @@ D2RL::ConsoleCommandResult __cdecl TrackerCommand(
         .columnCount = static_cast<std::uint32_t>(BuffHudColumns.size()),
         .columnStride = D2RL::CustomTables::ColumnDefinitionSize,
     };
-    return CustomTables->registerTable(Context, &registration, &BuffHudTable)
-            == D2RL::CustomTables::Result::Success
-        && BuffHudTable != D2RL::CustomTables::InvalidHandle;
+    if (CustomTables->registerTable(Context, &registration, &BuffHudTable)
+            != D2RL::CustomTables::Result::Success
+        || BuffHudTable == D2RL::CustomTables::InvalidHandle) {
+        Context->LogError("Buff Panel: unable to register selected buff-hud.txt custom table.");
+        return false;
+    }
+    char line[768]{};
+    if (TableSource == LooseBuffHud::Source::ActiveMod) {
+        std::snprintf(line, sizeof(line),
+            "Buff Panel: buff-hud.txt source=active-mod file=%s; override loaded; restart D2R after edits.",
+            TableSourcePath.c_str());
+    } else {
+        std::snprintf(line, sizeof(line),
+            "Buff Panel: buff-hud.txt source=embedded (active mod has no loose override)."
+            " No loose file is required; restart D2R after adding one.");
+    }
+    Context->LogInfo(line);
+    return true;
 }
 
 [[nodiscard]] bool RegisterLifecycle() noexcept {
@@ -1312,7 +1363,7 @@ bool Initialize(const D2RL::PluginContext* context) noexcept {
 
     ResetDiagnostics();
     Context->LogInfo(
-        "Buff Panel 1.0.0 BuffTracker initialized: whitelisted timer states are discovered from attached native player states once per game frame even without STATLIST_PostStatList; qualified expiry renewals, early removal and resource-mode polling remain supported.");
+        "Buff Panel 1.0.1 BuffTracker initialized: whitelisted timer states are discovered from attached native player states once per game frame even without STATLIST_PostStatList; qualified expiry renewals, early removal and resource-mode polling remain supported.");
     return true;
 }
 
@@ -1323,6 +1374,8 @@ void Shutdown() noexcept {
     FramePumpScheduled.store(false, std::memory_order_release);
     Whitelist.store({}, std::memory_order_release);
     BuffHudTable = D2RL::CustomTables::InvalidHandle;
+    TableSource = LooseBuffHud::Source::Embedded;
+    TableSourcePath.clear();
     DataTablesListener = D2RL::Lifecycle::InvalidHandle;
     GameplayListeners = {};
     ClearTimerPresenceRecords();

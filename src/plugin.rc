@@ -2,20 +2,20 @@
 #include <D2RLPlugin/version.h>
 D2RL_PLUGIN_MANIFEST_RESOURCE_ID RCDATA { D2RL_PLUGIN_RESOURCE_DWORD(D2RL_PLUGIN_ABI_VERSION) }
 1 VERSIONINFO
-FILEVERSION 1,0,0,0
-PRODUCTVERSION 1,0,0,0
+FILEVERSION 1,0,1,0
+PRODUCTVERSION 1,0,1,0
 BEGIN
   BLOCK "StringFileInfo"
   BEGIN
     BLOCK "040904B0"
     BEGIN
-      VALUE "CompanyName", "MindH1ve"
-      VALUE "FileDescription", "Standalone D2RLoader temporary-buff panel and timer."
-      VALUE "FileVersion", "1.0.0"
+      VALUE "CompanyName", "Buff Panel contributors"
+      VALUE "FileDescription", "Standalone D2RLoader temporary-buff panel and timer plugin copied from Sanctuary of Exile"
+      VALUE "FileVersion", "1.0.1"
       VALUE "InternalName", "buff-panel"
       VALUE "OriginalFilename", "d2rl-buff-panel.dll"
       VALUE "ProductName", "Buff Panel"
-      VALUE "ProductVersion", "1.0.0"
+      VALUE "ProductVersion", "1.0.1"
     END
   END
   BLOCK "VarFileInfo"
