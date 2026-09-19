@@ -30,3 +30,7 @@
 *.exe
 *.out
 *.app
+
+# Other
+BUFF-CATALOG-REPORT.md
+EXTRACTION.md
