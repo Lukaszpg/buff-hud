@@ -112,6 +112,134 @@ Try Fade (`state_id=159`) or another enabled native timer state. The 1.0.0 expan
 - **The DLL builds but refuses to initialize:** inspect build qualification / service availability. Do not bypass native-byte safety checks or assume an unrelated D2R build is supported.
 - **No buff appears:** confirm `buff-hud.txt` has the state enabled, the corresponding state is actually active, and `buff-panel-tracker` reports successful publication. Not every enabled catalog entry guarantees a usable native timer.
 
+# Moving Buff Panel in the game UI
+
+**Buff Panel 1.0.0** — layout customization for players and mod authors
+
+Buff Panel does **not** currently have a drag-to-move control or an in-game position setting. To change where it appears, edit its UI layout JSON and rebuild the plugin. You do **not** need to modify `buff-hud.txt`: that file selects which buffs are tracked, not where the panel is drawn.
+
+## 1. Find the panel layout
+
+In the extracted **source** package, open:
+
+```text
+plugins/buff-panel/runtime-data/data/global/ui/layouts/buff-panel/BuffHudhd.json
+```
+
+If you opened the source folder itself (`plugins/buff-panel`), the relative path starts at `runtime-data/`.
+
+## 2. Change the `BuffGrid` rectangle
+
+Near the start of the file you will find:
+
+```json
+{
+  "type": "Panel",
+  "name": "buff-panel/BuffHud",
+  "fields": {
+    "anchor": { "x": 0.5, "y": 1.0 },
+    "priority": 101
+  },
+  "children": [
+    {
+      "type": "Widget",
+      "name": "BuffGrid",
+      "fields": {
+        "rect": {
+          "x": 50,
+          "y": -515,
+          "width": 780,
+          "height": 300
+        }
+      }
+    }
+  ]
+}
+```
+
+This is an **excerpt** to help you locate the settings; do not replace the complete JSON with this shortened example. In the original file, `BuffGrid` also contains all 21 buff slots and their icon/text widgets.
+
+Change only `BuffGrid.fields.rect.x` and `BuffGrid.fields.rect.y` to reposition the **whole 3 × 7 panel**:
+
+| Change | Result |
+|---|---|
+| Increase `x` | Move right |
+| Decrease `x` | Move left |
+| Make `y` more negative | Move up |
+| Make `y` less negative | Move down |
+
+For example, starting from `x: 50, y: -515`:
+
+- Move right by 100 layout units: `x: 150, y: -515`.
+- Move left by 100 layout units: `x: -50, y: -515`.
+- Move up by 100 layout units: `x: 50, y: -615`.
+- Move down by 100 layout units: `x: 50, y: -415`.
+
+Use smaller increments (such as 20–50) to fine-tune. These are **D2R UI layout coordinates**; their apparent on-screen pixel distance may vary with game resolution and UI scaling.
+
+### What about the anchor?
+
+The outer panel currently declares:
+
+```json
+"anchor": { "x": 0.5, "y": 1.0 }
+```
+
+This provides the panel's horizontal-center / bottom-screen anchoring context. For ordinary repositioning, **leave the anchor alone** and move `BuffGrid` with `x`/`y` instead. Do not change the individual `BuffSlot00`–`BuffSlot20` rectangles unless you want to redesign the grid itself. Leave `width: 780` and `height: 300` unchanged if you only want to move it.
+
+## 3. Reconfigure and rebuild
+
+The layout is **embedded into `d2rl-buff-panel.dll` at build time**. Editing this source JSON by itself does not change the installed DLL, and rebuilding without a CMake reconfigure may reuse the previously generated layout header.
+
+Open a Windows terminal with your C++ build environment, then run these commands **from the extracted `plugins/buff-panel` project directory**:
+
+```powershell
+cmake -S . -B build -A x64
+cmake --build build --config Release --target buff_panel --parallel
+```
+
+If you are using an existing CMake workspace, reconfigure and build from its root instead:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Release --target buff_panel --parallel
+```
+
+Use your existing generator and build folder; do not add `-A x64` to a Ninja-configured build folder. Full build setup is documented in `BUILDING.md`.
+
+## 4. Replace the installed DLL and test
+
+Close the game, then replace the previous `d2rl-buff-panel.dll` with the rebuilt DLL in whichever plugin directory you use:
+
+```text
+<Diablo II Resurrected>/d2rloader/plugins/
+```
+
+or:
+
+```text
+<Diablo II Resurrected>/mods/<mod-name>/d2rloader/plugins/
+```
+
+Start the game and activate several buffs. For a repeatable visual test, use the plugin's console command:
+
+```text
+buff-panel test 15 3
+```
+
+This draws three temporary **display-only** test entries for 15 seconds. It does not apply three actual game buffs. Adjust the coordinates and rebuild again if needed.
+
+## Troubleshooting
+
+- **The panel did not move:** confirm you edited `BuffGrid.fields.rect` in the source package, re-ran CMake configuration, rebuilt the DLL, copied it over the installed DLL, and restarted the game.
+- **Only one icon moved:** you edited an individual `BuffSlot` instead of the parent `BuffGrid`.
+- **The panel is partly off-screen:** reduce the offset and test at the resolution/UI scale you intend to use.
+- **The panel is hidden behind another interface:** choose a different `x`/`y`; the layout also has `priority: 101`, but positioning is the intended adjustment here.
+- **You only have a compiled DLL:** the stock Buff Panel 1.0.0 has no in-game position editor; use the source package to customize and rebuild. Loose JSON overrides should not be assumed to replace the embedded plugin-owned layout on every D2RLoader installation.
+
+**Compatibility note:** changing UI position alone does not make the native hook code compatible with a different D2R executable build. Buff Panel 1.0.0's native code remains qualified for D2R build 93847.
+
+
 ## Commands
 
 ```text
