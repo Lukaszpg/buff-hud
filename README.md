@@ -2,6 +2,11 @@
 
 A standalone 3×7 temporary-buff panel and countdown tracker.
 
+## Acknowledgements
+
+Many thanks to [RuffnecKk](https://github.com/RuffDood) for being a great teacher and awesome dude.
+Make sure to check out his amazing plugin [suite](https://github.com/RuffDood/RuffnecKk-D2RLoader-Suite)!
+
 ## What it provides
 
 - 21 reusable display-only buff slots in a 3×7, lower-left-fill panel.
@@ -10,11 +15,6 @@ A standalone 3×7 temporary-buff panel and countdown tracker.
 - Automatic icon and localized name discovery using game Skills/SkillDesc and original skill icon atlases (Amazon through Warlock and Global).
 - Table-driven whitelist from `buff-hud.txt`: `name`, `state_id`, `display_type`, `value_stat`, `max_stat`, `skill_id`, `value_shift`, `enabled`.
 - Excludes curses and shared-stash proxy states; built-in semantic checks on native buff metadata.
-
-## Acknowledgements
-
-Many thanks to [RuffnecKk](https://github.com/RuffDood) for being a great teacher and awesome dude.
-Make sure to check out his amazing plugin [suite](https://github.com/RuffDood/RuffnecKk-D2RLoader-Suite)!
 
 ### Default table
 
