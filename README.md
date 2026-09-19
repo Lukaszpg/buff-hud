@@ -191,37 +191,9 @@ This provides the panel's horizontal-center / bottom-screen anchoring context. F
 
 The layout is **embedded into `d2rl-buff-panel.dll` at build time**. Editing this source JSON by itself does not change the installed DLL, and rebuilding without a CMake reconfigure may reuse the previously generated layout header.
 
-Open a Windows terminal with your C++ build environment, then run these commands **from the extracted `plugins/buff-panel` project directory**:
+Head to [build](https://github.com/Lukaszpg/buff-hud/edit/main/README.md#building) section to learn about rebuilding the project. 
 
-```powershell
-cmake -S . -B build -A x64
-cmake --build build --config Release --target buff_panel --parallel
-```
-
-If you are using an existing CMake workspace, reconfigure and build from its root instead:
-
-```powershell
-cmake -S . -B build
-cmake --build build --config Release --target buff_panel --parallel
-```
-
-Use your existing generator and build folder; do not add `-A x64` to a Ninja-configured build folder. Full build setup is documented in `BUILDING.md`.
-
-## 4. Replace the installed DLL and test
-
-Close the game, then replace the previous `d2rl-buff-panel.dll` with the rebuilt DLL in whichever plugin directory you use:
-
-```text
-<Diablo II Resurrected>/d2rloader/plugins/
-```
-
-or:
-
-```text
-<Diablo II Resurrected>/mods/<mod-name>/d2rloader/plugins/
-```
-
-Start the game and activate several buffs. For a repeatable visual test, use the plugin's console command:
+To test your changes, start the game and activate several buffs. For a repeatable visual test, use the plugin's console command:
 
 ```text
 buff-panel test 15 3
