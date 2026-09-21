@@ -47,6 +47,7 @@ Copy the files to your active mod directory under D2RLoader.
 ```
 data/global/ui/layouts/buff-panel/BuffHudhd.json
 data/global/excel/d2rloader/buff-panel/buff-hud.txt
+```
 
 ## Building
 
